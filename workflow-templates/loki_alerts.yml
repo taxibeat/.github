@@ -1,0 +1,60 @@
+name: Loki Alerts
+on:
+  pull_request:
+    paths:
+      - monitoring/loki/**
+  push:
+    branches:
+      - $default-branch
+env:
+  CORTEX_ADDRESS:   ${{ secrets.LOKI_URL }}
+  CORTEX_TENANT_ID: ${{ secrets.LOKI_TENANT_ID }}
+  RULES_DIR:        ${{ secrets.LOKI_RULES_DIR }}
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      is_default_branch: ${{ steps.branch-name.outputs.is_default }}
+    steps:
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v4.8
+  check:
+    name: Check Loki Rules
+    runs-on: sre
+    steps:
+      - name: Checkout Repo code into workspace directory
+        uses: actions/checkout@v2
+      - name: Lint logging alerts
+        uses: grafana/cortex-rules-action@v0.8.0
+        env:
+          ACTION: "lint"
+        with:
+          args: --backend=loki
+      - name: Diff current logging alerts
+        uses: grafana/cortex-rules-action@v0.8.0
+        env:
+          ACTION: 'diff'
+        with:
+          args: --backend=loki
+  deploy:
+    name: Deploy Loki Rules
+    runs-on: sre
+    if: ${{ needs.prepare.outputs.is_default_branch == 'true' }}
+    needs: [prepare, check]
+    steps:
+      - name: Checkout Repo code into workspace directory
+        uses: actions/checkout@v2
+      - name: Deploy logging alerts
+        uses: grafana/cortex-rules-action@v0.8.0
+        env:
+          ACTION: 'sync'
+        with:
+          args: --backend=loki
+      - name: Print current logging alerts
+        uses: grafana/cortex-rules-action@v0.8.0
+        env:
+          ACTION: 'print'
+        with:
+          args: --backend=loki
