@@ -1,0 +1,57 @@
+name: Docker Image CD
+
+on:
+  push:
+    # Run on tags
+    tags:
+    - '*'
+
+env:
+  DOCKERFILE: Dockerfile
+
+jobs:
+  build:
+    runs-on: # private runner name
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v3
+      with:
+        # list of Docker images to use as base name for tags
+        images: |
+          ${{ secrets.HARBOR_DOCKER_REGISTRY }}/beat/${{ github.repository }}
+        # generate Docker tags based on the following events/attributes
+        # see https://github.com/docker/metadata-action for more filters and examples
+        # please update to match tagging pattern used in the repo.
+        tags: |
+          type=ref,event=tag
+          type=sha
+
+    - name: Docker Login
+      uses: docker/login-action@v1.10.0
+      with:
+        registry: ${{ secrets.HARBOR_DOCKER_REGISTRY }}
+        username: ${{ secrets.HARBOR_USERNAME }}
+        password: ${{ secrets.HARBOR_PASSWORD }}
+        logout: false
+
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v2.6.1
+      with:
+        # build-args: # optional
+        context: .
+        file: ${{ env.DOCKERFILE }}
+        github-token: ${{ github.token }}
+        labels: |
+          ${{ steps.meta.outputs.labels }}
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+        # Sets the target stage to build
+        # target: # optional
+        push: true
+        # List of secrets to expose to the build (eg. key=string)
+        # secrets: # optional
+        # List of secret files to expose to the build (eg. key=filename, MY_SECRET=./secret.txt)
+        # secret-files: # optional
