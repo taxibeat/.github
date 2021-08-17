@@ -1,0 +1,13 @@
+{
+  "name": "Alerting (Logs)",
+  "description": "Alerting based on logs using Loki.",
+  "iconName": "alert",
+  "categories": [
+      "Alerting",
+      "Logs",
+      "Monitoring"
+  ],
+  "filePatterns": [
+      "monitoring/loki/.*"
+  ]
+}
