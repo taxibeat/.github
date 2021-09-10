@@ -16,13 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       is_default_branch: ${{ steps.branch-name.outputs.is_default }}
+      ruler_namespace_name: ${{ steps.get-namespace.outputs.name }}
     steps:
+      - name: Checkout Repo code into workspace directory
+        uses: actions/checkout@v2
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v4.8
+      - name: Get ruler Namespace
+        id: get-namespace
+        run: echo "::set-output name=name::$( ls ${{ github.workspace }}/${{ secrets.LOKI_RULES_DIR }} | sed -e 's/\..*$//' | head -n1 )"
   check:
     name: Check Loki Rules
     runs-on: sre
+    needs: prepare
     steps:
       - name: Checkout Repo code into workspace directory
         uses: actions/checkout@v2
@@ -37,7 +44,7 @@ jobs:
         env:
           ACTION: 'diff'
         with:
-          args: --backend=loki
+          args: --backend=loki --namespaces ${{ needs.prepare.outputs.ruler_namespace_name }}
   deploy:
     name: Deploy Loki Rules
     runs-on: sre
@@ -51,10 +58,4 @@ jobs:
         env:
           ACTION: 'sync'
         with:
-          args: --backend=loki
-      - name: Print current logging alerts
-        uses: grafana/cortex-rules-action@v0.8.0
-        env:
-          ACTION: 'print'
-        with:
-          args: --backend=loki
+          args: --backend=loki --namespaces ${{ needs.prepare.outputs.ruler_namespace_name }}
