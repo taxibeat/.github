@@ -1,0 +1,24 @@
+Name: Security scanning
+on:
+  pull_request:
+jobs:
+  security-scan:
+    runs-on: sre
+    name: security-checks
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Mkdir results-dir
+        run: mkdir -p results-dir
+      - name: Run Scan
+        uses: checkmarx/kics-action@v1.3
+        with:
+          path: '.'
+          fail_on: high
+          output_path: results-dir
+          output_formats: 'json'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          enable_comments: true
+      - name: Display Scan results
+        run: |
+          jq -e '.' results-dir/results.json
