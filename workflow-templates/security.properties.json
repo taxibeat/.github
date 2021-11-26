@@ -1,0 +1,12 @@
+{
+  "name": "Security scanning",
+  "description": "Keeping Infrastructure as Code Secure. Static code analysis for DockerFiles, Helm Charts, and Terraform IAC.",
+  "iconName": "security",
+  "categories": [
+      "Security",
+      "Scanning"
+  ],
+  "filePatterns": [
+      ".*"
+  ]
+}
